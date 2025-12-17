@@ -1037,6 +1037,12 @@ button.secondary:hover:not(:disabled) {
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
 }
 
+.settings-footer {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
 /* Mobile styles for navbar and settings */
 @media (max-width: 768px) {
   .settings-icon {

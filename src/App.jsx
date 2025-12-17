@@ -541,7 +541,18 @@ const App = () => {
             <div className="controls-bar">
                 {phase === 'idle' || phase === Logic.PHASES.SHOWDOWN ? (
                     <>
-                        <button className="primary" onClick={startNewHand}>
+                        <button 
+                            className="primary" 
+                            onClick={() => {
+                                if (phase === 'idle') {
+                                    // Show settings first when starting a new game
+                                    setShowSettings(true);
+                                } else {
+                                    // Just start next hand if already in a game
+                                    startNewHand();
+                                }
+                            }}
+                        >
                             {phase === 'idle' ? 'Start Game' : 'Next Hand'}
                         </button>
                         {phase === Logic.PHASES.SHOWDOWN && gameMoves.length > 0 && (
@@ -714,6 +725,21 @@ const App = () => {
                                         </>
                                     )}
                                 </>
+                            )}
+                            
+                            {phase === 'idle' && (
+                                <div className="settings-footer">
+                                    <button 
+                                        className="primary" 
+                                        onClick={() => {
+                                            setShowSettings(false);
+                                            startNewHand();
+                                        }}
+                                        style={{ width: '100%', marginTop: '20px' }}
+                                    >
+                                        Start Game
+                                    </button>
+                                </div>
                             )}
                         </div>
                     </div>
