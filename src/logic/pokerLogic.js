@@ -52,8 +52,9 @@ const evaluate5CardHand = (cards) => {
 
   const isFlush = suits.every(s => s === suits[0]);
   
-  // Check Straight
+  // Check Straight - use original ranks for this check
   let isStraight = true;
+  let straightKickers = [...ranks]; // Copy for straight kickers
   for (let i = 0; i < 4; i++) {
     if (ranks[i] - ranks[i+1] !== 1) {
       isStraight = false; 
@@ -63,19 +64,18 @@ const evaluate5CardHand = (cards) => {
   // Special Ace Low Straight (A-5-4-3-2)
   if (!isStraight && ranks[0] === 14 && ranks[1] === 5 && ranks[2] === 4 && ranks[3] === 3 && ranks[4] === 2) {
     isStraight = true;
-    // Move Ace to end for comparison logic (it becomes 1)
-    ranks.shift();
-    ranks.push(1);
+    // For ace-low straight, use [5, 4, 3, 2, 1] for kickers
+    straightKickers = [5, 4, 3, 2, 1];
   }
 
-  // Count multiples
+  // Count multiples - use ORIGINAL ranks, not modified ones
   const counts = {};
   ranks.forEach(r => counts[r] = (counts[r] || 0) + 1);
   const groups = Object.entries(counts).map(([r, c]) => ({ r: parseInt(r), c }));
   groups.sort((a, b) => b.c - a.c || b.r - a.r); // Sort by count desc, then rank desc
 
   // 1. Straight Flush
-  if (isFlush && isStraight) return { tier: 8, kickers: ranks, name: 'Straight Flush' };
+  if (isFlush && isStraight) return { tier: 8, kickers: straightKickers, name: 'Straight Flush' };
   
   // 2. Quads
   if (groups[0].c === 4) return { tier: 7, kickers: [groups[0].r, groups[1].r], name: 'Four of a Kind' };
@@ -87,16 +87,29 @@ const evaluate5CardHand = (cards) => {
   if (isFlush) return { tier: 5, kickers: ranks, name: 'Flush' };
   
   // 5. Straight
-  if (isStraight) return { tier: 4, kickers: ranks, name: 'Straight' };
+  if (isStraight) return { tier: 4, kickers: straightKickers, name: 'Straight' };
   
   // 6. Trips
-  if (groups[0].c === 3) return { tier: 3, kickers: [groups[0].r, ...ranks.filter(r => r !== groups[0].r)], name: 'Three of a Kind' };
+  if (groups[0].c === 3) {
+    const tripRank = groups[0].r;
+    const kickers = ranks.filter(r => r !== tripRank).sort((a, b) => b - a);
+    return { tier: 3, kickers: [tripRank, ...kickers], name: 'Three of a Kind' };
+  }
   
-  // 7. Two Pair
-  if (groups[0].c === 2 && groups[1].c === 2) return { tier: 2, kickers: [groups[0].r, groups[1].r, groups[2].r], name: 'Two Pair' };
+  // 7. Two Pair - ensure proper ordering: higher pair, lower pair, kicker
+  if (groups[0].c === 2 && groups[1].c === 2) {
+    const pair1Rank = groups[0].r; // Higher pair (sorted by rank desc)
+    const pair2Rank = groups[1].r; // Lower pair
+    const kicker = groups[2] ? groups[2].r : ranks.find(r => r !== pair1Rank && r !== pair2Rank);
+    return { tier: 2, kickers: [pair1Rank, pair2Rank, kicker], name: 'Two Pair' };
+  }
   
   // 8. Pair
-  if (groups[0].c === 2) return { tier: 1, kickers: [groups[0].r, ...ranks.filter(r => r !== groups[0].r)], name: 'Pair' };
+  if (groups[0].c === 2) {
+    const pairRank = groups[0].r;
+    const kickers = ranks.filter(r => r !== pairRank).sort((a, b) => b - a);
+    return { tier: 1, kickers: [pairRank, ...kickers], name: 'Pair' };
+  }
   
   // 9. High Card
   return { tier: 0, kickers: ranks, name: 'High Card' };
@@ -150,8 +163,20 @@ export const determineWinner = (players, communityCards) => {
   let winners = [];
 
   players.forEach((player) => {
+    // Skip folded players
     if (player.folded) return;
+    
+    // Skip players with no hand (shouldn't happen, but safety check)
+    if (!player.hand || player.hand.length < 2) return;
+    
     const score = evaluateHand(player.hand, communityCards);
+    
+    // Ensure we have a valid score
+    if (!score || score.tier === undefined) {
+      console.warn(`Invalid score for player ${player.id}:`, score);
+      return;
+    }
+    
     player.handStrength = score; // Store for display
 
     if (!bestScore || compareHandsResults(score, bestScore) > 0) {

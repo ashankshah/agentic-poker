@@ -50,6 +50,11 @@ const App = () => {
     // Game history/moves tracking
     const [gameMoves, setGameMoves] = useState([]);
     const [showAnalysis, setShowAnalysis] = useState(false);
+    
+    // Settings state
+    const [showSettings, setShowSettings] = useState(false);
+    const [selectedBotId, setSelectedBotId] = useState(1); // Default to Bot 1
+    const [settingsMode, setSettingsMode] = useState('Custom'); // Beginner, Advanced, Mixture, Custom
 
     // --- Initialization ---
     useEffect(() => {
@@ -63,7 +68,10 @@ const App = () => {
             bet: 0, // Bet in current round
             totalInvested: 0, // Total in pot
             currentAction: '',
-            showCards: false
+            showCards: false,
+            // Bot configuration (only for bots)
+            aggressiveLevel: i === 0 ? null : 50, // 0 = passive, 100 = aggressive
+            tightLevel: i === 0 ? null : 50 // 0 = loose, 100 = tight
         }));
         setPlayers(initialPlayers);
     }, []);
@@ -285,7 +293,10 @@ const App = () => {
         const newDeck = Logic.shuffleDeck(Logic.createDeck());
         const newPlayers = players.map(p => ({
             ...p,
-            hand: [], folded: false, bet: 0, currentAction: '', showCards: false, handStrength: null
+            hand: [], folded: false, bet: 0, currentAction: '', showCards: false, handStrength: null,
+            // Preserve bot configuration
+            aggressiveLevel: p.aggressiveLevel,
+            tightLevel: p.tightLevel
         }));
 
         setCommunityCards([]);
@@ -451,8 +462,60 @@ const App = () => {
         ? players[activePlayerIndex].name 
         : '';
 
+    // Handle bot configuration updates
+    const updateBotConfig = (botId, aggressiveLevel, tightLevel) => {
+        const newPlayers = players.map(p => 
+            p.id === botId 
+                ? { ...p, aggressiveLevel, tightLevel }
+                : p
+        );
+        setPlayers(newPlayers);
+    };
+    
+    // Apply preset configurations
+    const applyPresetConfig = (mode) => {
+        setSettingsMode(mode);
+        const newPlayers = players.map(p => {
+            if (p.isHuman) return p;
+            
+            let aggressiveLevel, tightLevel;
+            switch(mode) {
+                case 'Beginner':
+                    // More passive, tighter play
+                    aggressiveLevel = 30;
+                    tightLevel = 70;
+                    break;
+                case 'Advanced':
+                    // More aggressive, looser play
+                    aggressiveLevel = 70;
+                    tightLevel = 30;
+                    break;
+                case 'Mixture':
+                    // Mixed strategies - vary by bot
+                    aggressiveLevel = 30 + (p.id % 3) * 25; // 30, 55, or 80
+                    tightLevel = 70 - (p.id % 3) * 20; // 70, 50, or 30
+                    break;
+                default:
+                    return p; // Custom - don't change
+            }
+            return { ...p, aggressiveLevel, tightLevel };
+        });
+        setPlayers(newPlayers);
+    };
+
     return (
         <div className="poker-app">
+            {/* Navbar */}
+            <nav className="navbar">
+                <div className="navbar-left">
+                    <div className="logo-icon">♠</div>
+                    <div className="site-name">holdem sim</div>
+                </div>
+                <button className="settings-icon" onClick={() => setShowSettings(true)}>
+                    ⚙
+                </button>
+            </nav>
+            
             {/* Phase and Action Display Bubble */}
             <div className="status-bubble">
                 <div className="status-bubble-label">Phase</div>
@@ -560,6 +623,102 @@ const App = () => {
             
             {/* Overlay when sidebar is open */}
             {showAnalysis && <div className="analysis-overlay" onClick={() => setShowAnalysis(false)}></div>}
+            
+            {/* Settings Modal */}
+            {showSettings && (
+                <>
+                    <div className="settings-overlay" onClick={() => setShowSettings(false)}></div>
+                    <div className="settings-modal">
+                        <div className="settings-header">
+                            <h2>Bot Configuration</h2>
+                            <button className="close-settings" onClick={() => setShowSettings(false)}>×</button>
+                        </div>
+                        <div className="settings-content">
+                            <div className="preset-selector">
+                                <label>Difficulty Level:</label>
+                                <div className="preset-buttons">
+                                    <button 
+                                        className={settingsMode === 'Beginner' ? 'preset-btn active' : 'preset-btn'}
+                                        onClick={() => applyPresetConfig('Beginner')}
+                                    >
+                                        Beginner
+                                    </button>
+                                    <button 
+                                        className={settingsMode === 'Advanced' ? 'preset-btn active' : 'preset-btn'}
+                                        onClick={() => applyPresetConfig('Advanced')}
+                                    >
+                                        Advanced
+                                    </button>
+                                    <button 
+                                        className={settingsMode === 'Mixture' ? 'preset-btn active' : 'preset-btn'}
+                                        onClick={() => applyPresetConfig('Mixture')}
+                                    >
+                                        Mixture
+                                    </button>
+                                    <button 
+                                        className={settingsMode === 'Custom' ? 'preset-btn active' : 'preset-btn'}
+                                        onClick={() => setSettingsMode('Custom')}
+                                    >
+                                        Custom
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {settingsMode === 'Custom' && (
+                                <>
+                                    <div className="bot-selector">
+                                        <label>Select Bot:</label>
+                                        <select 
+                                            value={selectedBotId} 
+                                            onChange={(e) => setSelectedBotId(parseInt(e.target.value))}
+                                        >
+                                            {players.filter(p => !p.isHuman).map(bot => (
+                                                <option key={bot.id} value={bot.id}>{bot.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    {players[selectedBotId] && (
+                                        <>
+                                            <div className="slider-group">
+                                                <div className="slider-label">
+                                                    <span>Passive</span>
+                                                    <span className="slider-value">{players[selectedBotId].aggressiveLevel}%</span>
+                                                    <span>Aggressive</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    value={players[selectedBotId].aggressiveLevel || 50}
+                                                    onChange={(e) => updateBotConfig(selectedBotId, parseInt(e.target.value), players[selectedBotId].tightLevel || 50)}
+                                                    className="config-slider"
+                                                />
+                                            </div>
+                                            
+                                            <div className="slider-group">
+                                                <div className="slider-label">
+                                                    <span>Loose</span>
+                                                    <span className="slider-value">{players[selectedBotId].tightLevel}%</span>
+                                                    <span>Tight</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min="0"
+                                                    max="100"
+                                                    value={players[selectedBotId].tightLevel || 50}
+                                                    onChange={(e) => updateBotConfig(selectedBotId, players[selectedBotId].aggressiveLevel || 50, parseInt(e.target.value))}
+                                                    className="config-slider"
+                                                />
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
