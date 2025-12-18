@@ -71,6 +71,7 @@ body {
   color: var(--text-light);
   width: 40px;
   height: 40px;
+  min-width: auto;
   border-radius: 8px;
   cursor: pointer;
   font-size: 20px;
@@ -94,6 +95,7 @@ body {
   position: relative;
   width: 900px;
   height: 500px;
+  box-sizing: border-box;
   background-color: var(--felt-color);
   border: 15px solid var(--felt-border);
   border-radius: 250px;
@@ -290,9 +292,16 @@ button.primary {
   border: 1px solid #444;
 }
 
+/* Default range sizing (keep controls bar compact) */
 input[type=range] {
   width: 100px;
   cursor: pointer;
+}
+
+/* Settings modal sliders should span the modal width */
+.settings-content input[type=range] {
+  width: 100%;
+  max-width: none;
 }
 
 /* Status Bubble - Top Left */
@@ -346,7 +355,7 @@ input[type=range] {
   }
 
   .poker-table {
-    width: 95vw;
+    width: 92vw;
     max-width: 600px;
     height: auto;
     min-height: 400px;
@@ -824,7 +833,7 @@ button.secondary:hover:not(:disabled) {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 500px;
+  width: 680px;
   max-width: 90vw;
   max-height: 80vh;
   background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
@@ -871,6 +880,7 @@ button.secondary:hover:not(:disabled) {
   color: var(--text-light);
   width: 32px;
   height: 32px;
+  min-width: auto;
   border-radius: 50%;
   cursor: pointer;
   font-size: 24px;
@@ -892,6 +902,68 @@ button.secondary:hover:not(:disabled) {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.bot-count-selector {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.bot-count-selector label {
+  display: block;
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.bot-count-slider {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.bot-count-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s;
+}
+
+.bot-count-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+}
+
+.bot-count-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s;
+}
+
+.bot-count-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
 }
 
 .preset-selector {
@@ -976,6 +1048,7 @@ button.secondary:hover:not(:disabled) {
 
 .slider-group {
   margin-bottom: 32px;
+  width: 100%;
 }
 
 .slider-label {
@@ -994,7 +1067,9 @@ button.secondary:hover:not(:disabled) {
 }
 
 .config-slider {
+  display: block;
   width: 100%;
+  box-sizing: border-box;
   height: 6px;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.1);
@@ -1049,6 +1124,10 @@ button.secondary:hover:not(:disabled) {
     width: 32px;
     height: 32px;
     font-size: 18px;
+    min-width: 32px;
+    padding: 0;
+    aspect-ratio: 1 / 1;
+    flex: 0 0 auto;
   }
 
   .settings-modal {
@@ -1066,6 +1145,15 @@ button.secondary:hover:not(:disabled) {
 
   .settings-content {
     padding: 20px;
+  }
+
+  .close-settings {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    padding: 0;
+    aspect-ratio: 1 / 1;
+    flex: 0 0 auto;
   }
 
   .slider-group {
